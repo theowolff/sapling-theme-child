@@ -167,15 +167,26 @@ function vendorJs() {
    ====================== */
 
 function watchAll() {
-  // Theme SCSS
-  gulp.watch(['src/scss/_shared.scss', 'src/scss/main.scss'], stylesMain);
-  gulp.watch(['src/scss/_shared.scss', 'src/scss/sections/**/*.scss'], stylesSections);
-  gulp.watch(['src/scss/_shared.scss', 'src/scss/pages/*.scss'], stylesPages);
+  // Everything that feeds main.scss, but exclude sections/ and pages/
+  gulp.watch(
+    [
+      'src/scss/**/*.scss',
+      '!src/scss/sections/**',
+      '!src/scss/pages/**',
+    ],
+    stylesMain
+  );
 
-  // Theme JS
+  // All section styles
+  gulp.watch('src/scss/sections/**/*.scss', stylesSections);
+
+  // All page styles
+  gulp.watch('src/scss/pages/**/*.scss', stylesPages);
+
+  // JS
   gulp.watch(paths.js, scripts);
 
-  // Vendor assets (copy only)
+  // Vendor assets
   gulp.watch(paths.vendorCss, vendorCss);
   gulp.watch(paths.vendorJs, vendorJs);
 }

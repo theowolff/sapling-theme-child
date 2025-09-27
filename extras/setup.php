@@ -9,46 +9,46 @@
     $theme_slug = wp_get_theme()->get('TextDomain');
 
     // Enqueue styles and scripts
-    function twwp_child_enqueue_styles_scripts() {
+    function splng_child_enqueue_styles_scripts() {
 
         // Generate the files slug
         global $theme_slug, $the_theme;
         $prefix = strtolower(preg_replace('/[^a-z0-9]+/', '-', $theme_slug));
         
         /** Styles */
-        wp_enqueue_style("$prefix-vendor", TWWP_CHILD_DIST . '/css/vendor.min.css', array(), $version);
-        wp_enqueue_style("$prefix-main", TWWP_CHILD_DIST . '/css/main.min.css', array(), $the_theme->get('Version'));
+        wp_enqueue_style("$prefix-vendor", SPLNG_CHILD_DIST . '/css/vendor.min.css', array(), $version);
+        wp_enqueue_style("$prefix-main", SPLNG_CHILD_DIST . '/css/main.min.css', array(), $the_theme->get('Version'));
 
         /** Scripts **/
         wp_enqueue_script('jquery');
-        wp_enqueue_script("$prefix-vendor", TWWP_CHILD_DIST . '/js/vendor.min.js', array('jquery'), $version, true);
-        wp_enqueue_script("$prefix-main", TWWP_CHILD_DIST . '/js/main.min.js', array('jquery'), $the_theme->get('Version'), true);
+        wp_enqueue_script("$prefix-vendor", SPLNG_CHILD_DIST . '/js/vendor.min.js', array('jquery'), $version, true);
+        wp_enqueue_script("$prefix-main", SPLNG_CHILD_DIST . '/js/main.min.js', array('jquery'), $the_theme->get('Version'), true);
     }
-    add_action('wp_enqueue_scripts', 'twwp_child_enqueue_styles_scripts', 20);
+    add_action('wp_enqueue_scripts', 'splng_child_enqueue_styles_scripts', 20);
 
     // Define the theme's widget areas and sidebars
-    function twwp_register_widget_areas() {
+    function splng_register_widget_areas() {
 
         // register_sidebar(array(
-        //     'name'          => __('', 'wpstarter'),
+        //     'name'          => __('', 'sapling'),
         //     'id'            => '',
-        //     'description'   => __('', 'wpstarter'),
+        //     'description'   => __('', 'sapling'),
         //     'before_widget' => '<li id="%1$s" class="widget %2$s">',
         //     'after_widget'  => '</li>',
         //     'before_title'  => '<h4 class="widgettitle">',
         //     'after_title'   => '</h4>',
         // ));
     }
-    add_action('widgets_init', 'twwp_register_widget_areas', 10);
+    add_action('widgets_init', 'splng_register_widget_areas', 10);
 
     // Register additional theme menu locations
-    function twwp_register_theme_menus() {
+    function splng_register_theme_menus() {
 
         // register_nav_menus(array(
         //     'primary' => __('Primary Menu', get_stylesheet()),
         // ));
     }
-    add_action('after_setup_theme', 'twwp_register_theme_menus', 5);
+    add_action('after_setup_theme', 'splng_register_theme_menus', 5);
 
     // Add the Theme Setup options page (requires ACF Pro)
     if(function_exists('acf_add_options_page')) {
@@ -69,7 +69,7 @@
     }
     
     // Remove the editor from specific page-templates
-    function twwp_remove_editor_support_from_pages() {
+    function splng_remove_editor_support_from_pages() {
 
         $editor_disabled_pages = array(
             
@@ -79,7 +79,7 @@
             remove_post_type_support('page', 'editor');
         }
     }
-    add_action('admin_head', 'twwp_remove_editor_support_from_pages');
+    add_action('admin_head', 'splng_remove_editor_support_from_pages');
 
     // Disable block editor from managing widgets in the Gutenberg plugin.
     add_filter('gutenberg_use_widgets_block_editor', '__return_false', 100);
@@ -90,29 +90,29 @@
     // Resolve the issue with wp_get_sidebars_widgets() returning 
     // false and breaking array_marge if no widgets are available  
     // and Guttenberg is disabled for the widgets customizer.
-    function twwp_fix_wp_sidebar_widgets_false($widgets) {
+    function splng_fix_wp_sidebar_widgets_false($widgets) {
         return $widgets === false ? array() : $widgets;
     }
-    add_filter('sidebars_widgets', 'twwp_fix_wp_sidebar_widgets_false');
+    add_filter('sidebars_widgets', 'splng_fix_wp_sidebar_widgets_false');
 
     // Add relevant tracking codes to the site's <head>
-    function twwp_add_tracking_codes() {
+    function splng_add_tracking_codes() {
     ?>
 
     <?php
     }
-    add_action('wp_head', 'twwp_add_tracking_codes');
+    add_action('wp_head', 'splng_add_tracking_codes');
 
     // Add relevant tracking codes to the site's <body> (after opening tag)
-    function twwp_add_body_tracking_codes() {
+    function splng_add_body_tracking_codes() {
     ?>
 
     <?php
     }
-    add_action('wp_body_open', 'twwp_add_body_tracking_codes'); 
+    add_action('wp_body_open', 'splng_add_body_tracking_codes'); 
 
     // Set the theme footer's contents
-    function twwp_site_footer() {
+    function splng_site_footer() {
         ob_start();
     ?>
 
@@ -124,4 +124,4 @@
         // Echo contents and replace the year placeholder if it exists
         echo str_replace('{year}', date('Y'), $contents);
     }
-    add_action('twwp/footer', 'twwp_site_footer');
+    add_action('sapling/footer', 'splng_site_footer');

@@ -1,5 +1,5 @@
 {
-  "name": "twwp-theme-child",
+  "name": "sapling-theme-child",
   "private": true,
   "scripts": {
     "dev": "gulp dev",

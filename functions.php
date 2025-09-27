@@ -1,6 +1,6 @@
 <?php
-    if(! defined('TWWP_CHILD_DIST')) {
-        define('TWWP_CHILD_DIST', get_stylesheet_directory_uri() . '/dist');
+    if(! defined('SPLNG_CHILD_DIST')) {
+        define('SPLNG_CHILD_DIST', get_stylesheet_directory_uri() . '/dist');
     }
 
     // Wire extras: core files

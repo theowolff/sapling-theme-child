@@ -1,4 +1,3 @@
-
 <?php
     /**
      * Main page template for displaying flexible ACF content sections.

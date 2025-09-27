@@ -1,4 +1,3 @@
-
 <?php
     /**
      * Child theme bootstrap: constants, theme props, and core includes.

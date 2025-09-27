@@ -13,8 +13,12 @@
      */
     function splng_child_enqueue_styles_scripts() {
         global $splng_theme_prefix, $splng_theme_version;
+
+        /** Styles */
         wp_enqueue_style("$splng_theme_prefix-vendor", SPLNG_CHILD_DIST . '/css/vendor/slick.css', array(), $splng_theme_version);
         wp_enqueue_style("$splng_theme_prefix-main", SPLNG_CHILD_DIST . '/css/main.min.css', array(), $splng_theme_version);
+        
+        /** Scripts */
         wp_enqueue_script('jquery');
         wp_enqueue_script("$splng_theme_prefix-slick", SPLNG_CHILD_DIST . '/js/vendor/slick.min.js', array('jquery'), $splng_theme_version, true);
         wp_enqueue_script("$splng_theme_prefix-main", SPLNG_CHILD_DIST . '/js/main.min.js', array('jquery'), $splng_theme_version, true);
@@ -26,6 +30,7 @@
      * @return void
      */
     function splng_register_widget_areas() {
+
         // register_sidebar(array(
         //     'name'          => __('', 'sapling'),
         //     'id'            => '',
@@ -43,6 +48,7 @@
      * @return void
      */
     function splng_register_theme_menus() {
+
         // register_nav_menus(array(
         //     'primary' => __('Primary Menu', get_stylesheet()),
         // ));
@@ -54,8 +60,10 @@
      * @return void
      */
     if(function_exists('acf_add_options_page')) {
+
         global $splng_theme_slug;
         $site_name = get_bloginfo('name');
+
         acf_add_options_page(array(
             'page_title'  => sprintf(__('%s Setup', $splng_theme_slug), $site_name),
             'menu_title'  => sprintf(__('%s Setup', $splng_theme_slug), $site_name),
@@ -72,7 +80,11 @@
      * @return void
      */
     function splng_remove_editor_support_from_pages() {
-        $editor_disabled_pages = array();
+
+        $editor_disabled_pages = array(
+
+        );
+
         if(in_array(get_page_template_slug(), $editor_disabled_pages)) {
             remove_post_type_support('page', 'editor');
         }
@@ -81,6 +93,7 @@
 
     // Disable block editor from managing widgets in the Gutenberg plugin.
     add_filter('gutenberg_use_widgets_block_editor', '__return_false', 100);
+
     // Disable block editor from managing widgets. renamed from wp_use_widgets_block_editor
     add_filter('use_widgets_block_editor', '__return_false');
 
@@ -100,6 +113,7 @@
      */
     function splng_add_tracking_codes() {
     ?>
+
     <?php
     }
     add_action('wp_head', 'splng_add_tracking_codes');
@@ -110,6 +124,7 @@
      */
     function splng_add_body_tracking_codes() {
     ?>
+
     <?php
     }
     add_action('wp_body_open', 'splng_add_body_tracking_codes');
@@ -124,6 +139,7 @@
     <?php
         $contents = ob_get_contents();
         ob_end_clean();
+
         // Echo contents and replace the year placeholder if it exists
         echo str_replace('{year}', date('Y'), $contents);
     }

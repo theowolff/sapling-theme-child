@@ -3,7 +3,7 @@
     /**
      * Main page template for displaying flexible ACF content sections.
      *
-     * @package sapling-theme
+     * @package sapling-theme-child
      * @author theowolff
      */
 

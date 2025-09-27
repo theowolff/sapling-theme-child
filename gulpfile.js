@@ -7,22 +7,26 @@ const postcss = require('gulp-postcss');
 const sass = require('gulp-sass')(require('sass'));
 const rename = require('gulp-rename');
 const concat = require('gulp-concat');
-const header = require('gulp-header');
 const esbuild = require('esbuild'); // native API
 
 const paths = {
+  // theme sources
   scss: 'src/scss/**/*.scss',
   js: 'src/js/**/*.js',
+
+  // vendor sources (manual files you add to the theme repo)
+  vendorCss: 'src/vendor/css/**/*.{css,map}',
+  vendorJs: 'src/vendor/js/**/*.{js,map}',
+
+  // outputs
   outCss: 'dist/css',
   outJs: 'dist/js',
+  outVendorCss: 'dist/vendor/css',
+  outVendorJs: 'dist/vendor/js',
 };
 
-// Allow SCSS to resolve from src/scss and node_modules (for vendor CSS like slick)
+// will let SCSS @use/@import resolve from both theme and vendor packages (if ever needed)
 const sassIncludePaths = ['src/scss', 'node_modules'];
-
-// Inject at the top of SCSS entries so shared mixins/vars are always available
-// Assumes src/scss/_shared.scss exists and @forwards variables/mixins/etc.
-const sharedHeader = "@use 'shared' as *;\n";
 
 function clean() {
   const out = path.resolve('dist');
@@ -35,32 +39,12 @@ function clean() {
 }
 
 /* ======================
-   CSS — always sourcemaps + minify
+   CSS — always sourcemaps + minify (theme)
    ====================== */
-
-function stylesVendor() {
-  return gulp.src(['src/scss/vendor.scss'], { allowEmpty: true })
-    .pipe(plumber())
-    .pipe(sourcemaps.init())
-    .pipe(
-      sass.sync({
-        outputStyle: 'expanded',
-        includePaths: sassIncludePaths,
-      }).on('error', sass.logError)
-    )
-    .pipe(postcss([
-      require('autoprefixer')(),
-      require('cssnano')(),
-    ]))
-    .pipe(rename({ basename: 'vendor', suffix: '.min' }))
-    .pipe(sourcemaps.write('.'))
-    .pipe(gulp.dest(paths.outCss));
-}
 
 function stylesMain() {
   return gulp.src(['src/scss/main.scss'], { allowEmpty: true })
     .pipe(plumber())
-    .pipe(header(sharedHeader))
     .pipe(sourcemaps.init())
     .pipe(
       sass.sync({
@@ -80,7 +64,6 @@ function stylesMain() {
 function stylesSections() {
   return gulp.src(['src/scss/sections/**/*.scss'], { allowEmpty: true })
     .pipe(plumber())
-    .pipe(header(sharedHeader))
     .pipe(sourcemaps.init())
     .pipe(
       sass.sync({
@@ -101,7 +84,6 @@ function stylesSections() {
 function stylesPages() {
   return gulp.src(['src/scss/pages/*.scss'], { allowEmpty: true })
     .pipe(plumber())
-    .pipe(header(sharedHeader))
     .pipe(sourcemaps.init())
     .pipe(
       sass.sync({
@@ -114,7 +96,7 @@ function stylesPages() {
       require('cssnano')(),
     ]))
     .pipe(rename((p) => {
-      // outputs dist/css/pages/{page}.min.css
+      // Outputs dist/css/pages/{page}.min.css
       p.dirname = 'pages';
       p.basename = p.basename + '.min';
       p.extname = '.css';
@@ -124,25 +106,8 @@ function stylesPages() {
 }
 
 /* ======================
-   JS — always sourcemaps + minify
+   JS — always sourcemaps + minify (theme)
    ====================== */
-
-function scriptsVendor() {
-  fs.mkdirSync(paths.outJs, { recursive: true });
-  return esbuild.build({
-    entryPoints: ['src/js/vendor.js'],
-    outdir: paths.outJs,
-    bundle: true,
-    format: 'iife',
-    target: ['es2018'],
-    sourcemap: true,
-    minify: true,
-    entryNames: 'vendor.min',
-    legalComments: 'none',
-    logLevel: 'silent',
-    external: ['jquery'],
-  });
-}
 
 function scripts() {
   const srcDir = 'src/js';
@@ -152,7 +117,7 @@ function scripts() {
   }
 
   const entryPoints = fs.readdirSync(srcDir)
-    .filter(f => f.endsWith('.js') && f !== 'vendor.js')
+    .filter(f => f.endsWith('.js'))
     .map(f => path.join(srcDir, f));
 
   if (entryPoints.length === 0) {
@@ -173,8 +138,28 @@ function scripts() {
     entryNames: '[name].min',
     legalComments: 'none',
     logLevel: 'silent',
+    // don’t bundle jQuery; WP supplies it
     external: ['jquery'],
   });
+}
+
+/* ======================
+   Vendors — copy-only (no bundling, no transform)
+   Place files under:
+   - src/vendor/css/...   → dist/vendor/css/...
+   - src/vendor/js/...    → dist/vendor/js/...
+   ====================== */
+
+function vendorCss() {
+  return gulp.src(paths.vendorCss, { allowEmpty: true })
+    .pipe(plumber())
+    .pipe(gulp.dest(paths.outVendorCss));
+}
+
+function vendorJs() {
+  return gulp.src(paths.vendorJs, { allowEmpty: true })
+    .pipe(plumber())
+    .pipe(gulp.dest(paths.outVendorJs));
 }
 
 /* ======================
@@ -182,10 +167,6 @@ function scripts() {
    ====================== */
 
 function watchAll() {
-  // vendor
-  gulp.watch(['src/scss/vendor.scss'], stylesVendor);
-  gulp.watch(['src/js/vendor.js'], scriptsVendor);
-
   // theme scss
   gulp.watch(['src/scss/_shared.scss', 'src/scss/main.scss'], stylesMain);
   gulp.watch(['src/scss/_shared.scss', 'src/scss/sections/**/*.scss'], stylesSections);
@@ -193,21 +174,26 @@ function watchAll() {
 
   // theme js
   gulp.watch(paths.js, scripts);
+
+  // vendor assets (copy only)
+  gulp.watch(paths.vendorCss, vendorCss);
+  gulp.watch(paths.vendorJs, vendorJs);
 }
 
 const dev = gulp.series(
   clean,
-  gulp.parallel(stylesVendor, stylesMain, stylesSections, stylesPages, scriptsVendor, scripts)
+  gulp.parallel(stylesMain, stylesSections, stylesPages, scripts, vendorCss, vendorJs)
 );
 
 const build = gulp.series(
   clean,
-  gulp.parallel(stylesVendor, stylesMain, stylesSections, stylesPages, scriptsVendor, scripts)
+  gulp.parallel(stylesMain, stylesSections, stylesPages, scripts, vendorCss, vendorJs)
 );
 
 exports.clean = clean;
-exports.styles = gulp.parallel(stylesVendor, stylesMain, stylesSections, stylesPages);
-exports.scripts = gulp.parallel(scriptsVendor, scripts);
+exports.styles = gulp.parallel(stylesMain, stylesSections, stylesPages);
+exports.scripts = scripts;
+exports.vendors = gulp.parallel(vendorCss, vendorJs);
 exports.dev = dev;
 exports.build = build;
 exports.watch = gulp.series(dev, watchAll);

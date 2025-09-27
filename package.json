@@ -14,7 +14,6 @@
     "gulp": "^5.0.1",
     "gulp-concat": "^2.6.1",
     "gulp-esbuild": "^0.12.0",
-    "gulp-header": "^2.0.9",
     "gulp-if": "^3.0.0",
     "gulp-plumber": "^1.2.1",
     "gulp-postcss": "^9.0.1",
@@ -25,8 +24,5 @@
   },
   "browserslist": [
     "defaults"
-  ],
-  "dependencies": {
-    "slick-carousel": "^1.8.1"
-  }
+  ]
 }

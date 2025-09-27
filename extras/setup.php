@@ -16,12 +16,12 @@
         $prefix = strtolower(preg_replace('/[^a-z0-9]+/', '-', $theme_slug));
         
         /** Styles */
-        wp_enqueue_style("$prefix-vendor", SPLNG_CHILD_DIST . '/css/vendor.min.css', array(), $version);
+        wp_enqueue_style("$prefix-vendor", SPLNG_CHILD_DIST . '/css/vendor.min.css', array(), $the_theme->get('Version'));
         wp_enqueue_style("$prefix-main", SPLNG_CHILD_DIST . '/css/main.min.css', array(), $the_theme->get('Version'));
 
         /** Scripts **/
         wp_enqueue_script('jquery');
-        wp_enqueue_script("$prefix-vendor", SPLNG_CHILD_DIST . '/js/vendor.min.js', array('jquery'), $version, true);
+        wp_enqueue_script("$prefix-vendor", SPLNG_CHILD_DIST . '/js/vendor.min.js', array('jquery'), $the_theme->get('Version'), true);
         wp_enqueue_script("$prefix-main", SPLNG_CHILD_DIST . '/js/main.min.js', array('jquery'), $the_theme->get('Version'), true);
     }
     add_action('wp_enqueue_scripts', 'splng_child_enqueue_styles_scripts', 20);

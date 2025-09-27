@@ -14,12 +14,12 @@
         global $splng_theme_prefix, $splng_theme_version;
 
         /** Styles */
-        wp_enqueue_style("$splng_theme_prefix-vendor", SPLNG_CHILD_DIST . '/css/vendor/slick.css', array(), $splng_theme_version);
+        wp_enqueue_style("$splng_theme_prefix-vendor", SPLNG_CHILD_DIST . '/vendor/css/slick.css', array(), $splng_theme_version);
         wp_enqueue_style("$splng_theme_prefix-main", SPLNG_CHILD_DIST . '/css/main.min.css', array(), $splng_theme_version);
         
         /** Scripts */
         wp_enqueue_script('jquery');
-        wp_enqueue_script("$splng_theme_prefix-slick", SPLNG_CHILD_DIST . '/js/vendor/slick.min.js', array('jquery'), $splng_theme_version, true);
+        wp_enqueue_script("$splng_theme_prefix-slick", SPLNG_CHILD_DIST . '/vendor/js/slick.min.js', array('jquery'), $splng_theme_version, true);
         wp_enqueue_script("$splng_theme_prefix-main", SPLNG_CHILD_DIST . '/js/main.min.js', array('jquery'), $splng_theme_version, true);
     }
     add_action('wp_enqueue_scripts', 'splng_child_enqueue_styles_scripts', 20);

@@ -16,13 +16,13 @@
         $prefix = strtolower(preg_replace('/[^a-z0-9]+/', '-', $theme_slug));
         
         /** Styles */
-        wp_register_style("$prefix-main", TWWP_CHILD_DIST . '/css/main.min.css', [], $the_theme->get('Version'));
-        wp_enqueue_script("$prefix-main");
+        wp_enqueue_style("$prefix-vendor", TWWP_CHILD_DIST . '/css/vendor.min.css', array(), $version);
+        wp_enqueue_style("$prefix-main", TWWP_CHILD_DIST . '/css/main.min.css', array(), $the_theme->get('Version'));
 
         /** Scripts **/
         wp_enqueue_script('jquery');
-        wp_register_script("$prefix-main", TWWP_CHILD_DIST . '/js/main.js', [], $the_theme->get('Version'), true);
-        wp_enqueue_script("$prefix-main");
+        wp_enqueue_script("$prefix-vendor", TWWP_CHILD_DIST . '/js/vendor.min.js', array('jquery'), $version, true);
+        wp_enqueue_script("$prefix-main", TWWP_CHILD_DIST . '/js/main.min.js', array('jquery'), $the_theme->get('Version'), true);
     }
     add_action('wp_enqueue_scripts', 'twwp_child_enqueue_styles_scripts', 20);
 

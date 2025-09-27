@@ -17,7 +17,10 @@ const paths = {
   outJs: 'dist/js',
 };
 
-// Inject this at the top of each SCSS entry so mixins/vars are always available
+// Allow SCSS to resolve from src/scss and node_modules (for vendor CSS like slick)
+const sassIncludePaths = ['src/scss', 'node_modules'];
+
+// Inject at the top of SCSS entries so shared mixins/vars are always available
 // Assumes src/scss/_shared.scss exists and @forwards variables/mixins/etc.
 const sharedHeader = "@use 'shared' as *;\n";
 
@@ -32,8 +35,27 @@ function clean() {
 }
 
 /* ======================
-  CSS — always sourcemaps + minify
-  ====================== */
+   CSS — always sourcemaps + minify
+   ====================== */
+
+function stylesVendor() {
+  return gulp.src(['src/scss/vendor.scss'], { allowEmpty: true })
+    .pipe(plumber())
+    .pipe(sourcemaps.init())
+    .pipe(
+      sass.sync({
+        outputStyle: 'expanded',
+        includePaths: sassIncludePaths,
+      }).on('error', sass.logError)
+    )
+    .pipe(postcss([
+      require('autoprefixer')(),
+      require('cssnano')(),
+    ]))
+    .pipe(rename({ basename: 'vendor', suffix: '.min' }))
+    .pipe(sourcemaps.write('.'))
+    .pipe(gulp.dest(paths.outCss));
+}
 
 function stylesMain() {
   return gulp.src(['src/scss/main.scss'], { allowEmpty: true })
@@ -43,7 +65,7 @@ function stylesMain() {
     .pipe(
       sass.sync({
         outputStyle: 'expanded',
-        includePaths: ['src/scss'],
+        includePaths: sassIncludePaths,
       }).on('error', sass.logError)
     )
     .pipe(postcss([
@@ -63,7 +85,7 @@ function stylesSections() {
     .pipe(
       sass.sync({
         outputStyle: 'expanded',
-        includePaths: ['src/scss'],
+        includePaths: sassIncludePaths,
       }).on('error', sass.logError)
     )
     .pipe(postcss([
@@ -84,7 +106,7 @@ function stylesPages() {
     .pipe(
       sass.sync({
         outputStyle: 'expanded',
-        includePaths: ['src/scss'],
+        includePaths: sassIncludePaths,
       }).on('error', sass.logError)
     )
     .pipe(postcss([
@@ -102,8 +124,25 @@ function stylesPages() {
 }
 
 /* ======================
-  JS — always sourcemaps + minify
-  ====================== */
+   JS — always sourcemaps + minify
+   ====================== */
+
+function scriptsVendor() {
+  fs.mkdirSync(paths.outJs, { recursive: true });
+  return esbuild.build({
+    entryPoints: ['src/js/vendor.js'],
+    outdir: paths.outJs,
+    bundle: true,
+    format: 'iife',
+    target: ['es2018'],
+    sourcemap: true,
+    minify: true,
+    entryNames: 'vendor.min',
+    legalComments: 'none',
+    logLevel: 'silent',
+    external: ['jquery'],
+  });
+}
 
 function scripts() {
   const srcDir = 'src/js';
@@ -113,7 +152,7 @@ function scripts() {
   }
 
   const entryPoints = fs.readdirSync(srcDir)
-    .filter(f => f.endsWith('.js'))
+    .filter(f => f.endsWith('.js') && f !== 'vendor.js')
     .map(f => path.join(srcDir, f));
 
   if (entryPoints.length === 0) {
@@ -134,26 +173,41 @@ function scripts() {
     entryNames: '[name].min',
     legalComments: 'none',
     logLevel: 'silent',
+    external: ['jquery'],
   });
 }
 
 /* ======================
-  Watch / Tasks
-  ====================== */
+   Watch / Tasks
+   ====================== */
 
 function watchAll() {
+  // vendor
+  gulp.watch(['src/scss/vendor.scss'], stylesVendor);
+  gulp.watch(['src/js/vendor.js'], scriptsVendor);
+
+  // theme scss
   gulp.watch(['src/scss/_shared.scss', 'src/scss/main.scss'], stylesMain);
   gulp.watch(['src/scss/_shared.scss', 'src/scss/sections/**/*.scss'], stylesSections);
   gulp.watch(['src/scss/_shared.scss', 'src/scss/pages/*.scss'], stylesPages);
+
+  // theme js
   gulp.watch(paths.js, scripts);
 }
 
-const dev = gulp.series(clean, gulp.parallel(stylesMain, stylesSections, stylesPages, scripts));
-const build = gulp.series(clean, gulp.parallel(stylesMain, stylesSections, stylesPages, scripts));
+const dev = gulp.series(
+  clean,
+  gulp.parallel(stylesVendor, stylesMain, stylesSections, stylesPages, scriptsVendor, scripts)
+);
+
+const build = gulp.series(
+  clean,
+  gulp.parallel(stylesVendor, stylesMain, stylesSections, stylesPages, scriptsVendor, scripts)
+);
 
 exports.clean = clean;
-exports.styles = gulp.parallel(stylesMain, stylesSections, stylesPages);
-exports.scripts = scripts;
+exports.styles = gulp.parallel(stylesVendor, stylesMain, stylesSections, stylesPages);
+exports.scripts = gulp.parallel(scriptsVendor, scripts);
 exports.dev = dev;
 exports.build = build;
 exports.watch = gulp.series(dev, watchAll);

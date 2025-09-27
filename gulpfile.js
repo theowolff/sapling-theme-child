@@ -11,14 +11,14 @@ const header = require('gulp-header');
 const esbuild = require('esbuild'); // native API
 
 const paths = {
-  scss: 'scss/**/*.scss',
+  scss: 'src/scss/**/*.scss',
   js: 'src/js/**/*.js',
   outCss: 'dist/css',
   outJs: 'dist/js',
 };
 
 // Inject this at the top of each SCSS entry so mixins/vars are always available
-// Assumes scss/_shared.scss exists and @forwards variables/mixins/etc.
+// Assumes src/scss/_shared.scss exists and @forwards variables/mixins/etc.
 const sharedHeader = "@use 'shared' as *;\n";
 
 function clean() {
@@ -36,14 +36,14 @@ function clean() {
   ====================== */
 
 function stylesMain() {
-  return gulp.src(['scss/main.scss'], { allowEmpty: true })
+  return gulp.src(['src/scss/main.scss'], { allowEmpty: true })
     .pipe(plumber())
     .pipe(header(sharedHeader))
     .pipe(sourcemaps.init())
     .pipe(
       sass.sync({
         outputStyle: 'expanded',
-        includePaths: ['scss'],
+        includePaths: ['src/scss'],
       }).on('error', sass.logError)
     )
     .pipe(postcss([
@@ -56,14 +56,14 @@ function stylesMain() {
 }
 
 function stylesSections() {
-  return gulp.src(['scss/sections/**/*.scss'], { allowEmpty: true })
+  return gulp.src(['src/scss/sections/**/*.scss'], { allowEmpty: true })
     .pipe(plumber())
     .pipe(header(sharedHeader))
     .pipe(sourcemaps.init())
     .pipe(
       sass.sync({
         outputStyle: 'expanded',
-        includePaths: ['scss'],
+        includePaths: ['src/scss'],
       }).on('error', sass.logError)
     )
     .pipe(postcss([
@@ -77,14 +77,14 @@ function stylesSections() {
 }
 
 function stylesPages() {
-  return gulp.src(['scss/pages/*.scss'], { allowEmpty: true })
+  return gulp.src(['src/scss/pages/*.scss'], { allowEmpty: true })
     .pipe(plumber())
     .pipe(header(sharedHeader))
     .pipe(sourcemaps.init())
     .pipe(
       sass.sync({
         outputStyle: 'expanded',
-        includePaths: ['scss'],
+        includePaths: ['src/scss'],
       }).on('error', sass.logError)
     )
     .pipe(postcss([
@@ -142,9 +142,9 @@ function scripts() {
   ====================== */
 
 function watchAll() {
-  gulp.watch(['scss/_shared.scss', 'scss/main.scss'], stylesMain);
-  gulp.watch(['scss/_shared.scss', 'scss/sections/**/*.scss'], stylesSections);
-  gulp.watch(['scss/_shared.scss', 'scss/pages/*.scss'], stylesPages);
+  gulp.watch(['src/scss/_shared.scss', 'src/scss/main.scss'], stylesMain);
+  gulp.watch(['src/scss/_shared.scss', 'src/scss/sections/**/*.scss'], stylesSections);
+  gulp.watch(['src/scss/_shared.scss', 'src/scss/pages/*.scss'], stylesPages);
   gulp.watch(paths.js, scripts);
 }
 

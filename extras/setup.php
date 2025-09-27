@@ -3,23 +3,28 @@
      * Theme setup & bootstrap: enqueue, supports, analytics placeholders.
      */
 
+    // Get the theme object and props
+    global $wp, $the_theme, $theme_slug;
+    $the_theme = wp_get_theme();
+    $theme_slug = wp_get_theme()->get('TextDomain');
+
     // Enqueue styles and scripts
     function twwp_child_enqueue_styles_scripts() {
-        global $wp;
-        $the_theme = wp_get_theme();
 
-        /** Parent scripts and styles */
-        wp_enqueue_style('twwp-child-main');
-        wp_enqueue_script('twwp-child-main');
+        // Generate the files slug
+        global $theme_slug, $the_theme;
+        $prefix = strtolower(preg_replace('/[^a-z0-9]+/', '-', $theme_slug));
         
-        /** Child styles */
-        wp_register_style('twwp-child-main', TWWP_CHILD_DIST . '/css/main.min.css', [], $the_theme->get('Version'));
+        /** Styles */
+        wp_register_style("$prefix-main", TWWP_CHILD_DIST . '/css/main.min.css', [], $the_theme->get('Version'));
+        wp_enqueue_script("$prefix-main");
 
-        /** Child scripts **/
+        /** Scripts **/
         wp_enqueue_script('jquery');
-        wp_register_script('twwp-child-main', TWWP_CHILD_DIST . '/js/main.js', [], $the_theme->get('Version'), true);
+        wp_register_script("$prefix-main", TWWP_CHILD_DIST . '/js/main.js', [], $the_theme->get('Version'), true);
+        wp_enqueue_script("$prefix-main");
     }
-    add_action('wp_enqueue_scripts', 'twwp_child_enqueue_styles_scripts');
+    add_action('wp_enqueue_scripts', 'twwp_child_enqueue_styles_scripts', 20);
 
     // Define the theme's widget areas and sidebars
     function twwp_register_widget_areas() {
@@ -48,11 +53,9 @@
     // Add the Theme Setup options page (requires ACF Pro)
     if(function_exists('acf_add_options_page')) {
 
-        // Get site name for titles
+        // Get site name and theme slug for titles
+        global $theme_slug;
         $site_name = get_bloginfo('name');
-
-        // Get child theme slug (folder name / text domain)
-        $theme_slug = wp_get_theme()->get('TextDomain');
 
         acf_add_options_page(array(
             'page_title'  => sprintf(__('%s Setup', $theme_slug), $site_name),

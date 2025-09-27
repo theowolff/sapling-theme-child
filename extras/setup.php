@@ -3,13 +3,6 @@
      * Theme setup & bootstrap: enqueue, supports, analytics placeholders.
      */
 
-    // Get the theme object and props
-    global $splng_theme, $splng_theme_slug, $splng_theme_prefix, $splng_theme_version;
-    $splng_theme = wp_get_theme();
-    $splng_theme_version = $splng_theme->get('Version');
-    $splng_theme_slug = wp_get_theme()->get('TextDomain');
-    $splng_theme_prefix = strtolower(preg_replace('/[^a-z0-9]+/', '-', $splng_theme_slug));
-
     // Enqueue styles and scripts
     function splng_child_enqueue_styles_scripts() {
 

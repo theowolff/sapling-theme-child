@@ -7,18 +7,18 @@ const postcss = require('gulp-postcss');
 const sass = require('gulp-sass')(require('sass'));
 const rename = require('gulp-rename');
 const concat = require('gulp-concat');
-const esbuild = require('esbuild'); // native API
+const esbuild = require('esbuild');
 
 const paths = {
-  // theme sources
+  // Theme sources
   scss: 'src/scss/**/*.scss',
   js: 'src/js/**/*.js',
 
-  // vendor sources (manual files you add to the theme repo)
+  // Vendor sources (manual files you add to the theme repo)
   vendorCss: 'src/vendor/css/**/*.{css,map}',
   vendorJs: 'src/vendor/js/**/*.{js,map}',
 
-  // outputs
+  // Outputs
   outCss: 'dist/css',
   outJs: 'dist/js',
   outVendorCss: 'dist/vendor/css',
@@ -167,15 +167,15 @@ function vendorJs() {
    ====================== */
 
 function watchAll() {
-  // theme scss
+  // Theme SCSS
   gulp.watch(['src/scss/_shared.scss', 'src/scss/main.scss'], stylesMain);
   gulp.watch(['src/scss/_shared.scss', 'src/scss/sections/**/*.scss'], stylesSections);
   gulp.watch(['src/scss/_shared.scss', 'src/scss/pages/*.scss'], stylesPages);
 
-  // theme js
+  // Theme JS
   gulp.watch(paths.js, scripts);
 
-  // vendor assets (copy only)
+  // Vendor assets (copy only)
   gulp.watch(paths.vendorCss, vendorCss);
   gulp.watch(paths.vendorJs, vendorJs);
 }

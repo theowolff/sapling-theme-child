@@ -1,4 +1,15 @@
+
 <?php
+    /**
+     * Main page template for displaying flexible ACF content sections.
+     *
+     * @package sapling-theme
+     * @author theowolff
+     */
+
+    /**
+     * Load site header template.
+     */
     get_header();
 ?>
 
@@ -6,24 +17,27 @@
     <div class="container">
         <?php
             /**
-             * Use a flexible ACF field to build out page content sections.
-             * Each section is a separate partial template.
+             * Loop through posts and display flexible ACF content sections.
              */
             if(have_posts()) {
                 while(have_posts()) {
                     the_post();
 
-                    // Get the theme's prefix to use with the field name
+                    /**
+                     * Access global theme prefix variable.
+                     */
                     global $splng_theme_prefix;
 
-                    // If any rows were found, loop through them.
+                    /**
+                     * Load ACF flexible content sections (if any).
+                     */
                     if(have_rows("{$splng_theme_prefix}__global_components")) {
                         while(have_rows("{$splng_theme_prefix}__global_components")) {
                             the_row();
 
-                            // Extract the layout name and load the corresponding partial template.
-                            // Assumes partial templates are in partial-templates/sections/
-                            // and named to match the layout name (minus the prefix).
+                            /**
+                             * Retrieve layout name and load corresponding partial template.
+                             */
                             $layout = str_replace("{$splng_theme_prefix}__global_component--", '', get_row_layout());
                             get_template_part("partial-templates/sections/$layout");
                         }
@@ -35,4 +49,7 @@
 </main>
 
 <?php
+    /**
+     * Load site footer template.
+     */
     get_footer();

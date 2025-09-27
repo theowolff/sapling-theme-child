@@ -21,6 +21,30 @@
     }
     add_action('wp_enqueue_scripts', 'twwp_child_enqueue_styles_scripts');
 
+    // Define the theme's widget areas and sidebars
+    function twwp_register_widget_areas() {
+
+        // register_sidebar(array(
+        //     'name'          => __('', 'wpstarter'),
+        //     'id'            => '',
+        //     'description'   => __('', 'wpstarter'),
+        //     'before_widget' => '<li id="%1$s" class="widget %2$s">',
+        //     'after_widget'  => '</li>',
+        //     'before_title'  => '<h4 class="widgettitle">',
+        //     'after_title'   => '</h4>',
+        // ));
+    }
+    add_action('widgets_init', 'twwp_register_widget_areas', 10);
+
+    // Register additional theme menu locations
+    function twwp_register_theme_menus() {
+
+        // register_nav_menus(array(
+        //     'primary' => __('Primary Menu', get_stylesheet()),
+        // ));
+    }
+    add_action('after_setup_theme', 'twwp_register_theme_menus', 5);
+
     // Add the Theme Setup options page (requires ACF Pro)
     if(function_exists('acf_add_options_page')) {
 

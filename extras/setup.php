@@ -4,25 +4,26 @@
      */
 
     // Get the theme object and props
-    global $wp, $the_theme, $theme_slug;
-    $the_theme = wp_get_theme();
-    $theme_slug = wp_get_theme()->get('TextDomain');
+    global $splng_theme, $splng_theme_slug, $splng_theme_prefix, $splng_theme_version;
+    $splng_theme = wp_get_theme();
+    $splng_theme_version = $splng_theme->get('Version');
+    $splng_theme_slug = wp_get_theme()->get('TextDomain');
+    $splng_theme_prefix = strtolower(preg_replace('/[^a-z0-9]+/', '-', $splng_theme_slug));
 
     // Enqueue styles and scripts
     function splng_child_enqueue_styles_scripts() {
 
         // Generate the files slug
-        global $theme_slug, $the_theme;
-        $prefix = strtolower(preg_replace('/[^a-z0-9]+/', '-', $theme_slug));
+        global $splng_theme_prefix, $splng_theme_version;
         
         /** Styles */
-        wp_enqueue_style("$prefix-vendor", SPLNG_CHILD_DIST . '/css/vendor.min.css', array(), $the_theme->get('Version'));
-        wp_enqueue_style("$prefix-main", SPLNG_CHILD_DIST . '/css/main.min.css', array(), $the_theme->get('Version'));
+        wp_enqueue_style("$splng_theme_prefix-vendor", SPLNG_CHILD_DIST . '/css/vendor.min.css', array(), $splng_theme_version);
+        wp_enqueue_style("$splng_theme_prefix-main", SPLNG_CHILD_DIST . '/css/main.min.css', array(), $splng_theme_version);
 
         /** Scripts **/
         wp_enqueue_script('jquery');
-        wp_enqueue_script("$prefix-vendor", SPLNG_CHILD_DIST . '/js/vendor.min.js', array('jquery'), $the_theme->get('Version'), true);
-        wp_enqueue_script("$prefix-main", SPLNG_CHILD_DIST . '/js/main.min.js', array('jquery'), $the_theme->get('Version'), true);
+        wp_enqueue_script("$splng_theme_prefix-vendor", SPLNG_CHILD_DIST . '/js/vendor.min.js', array('jquery'), $splng_theme_version, true);
+        wp_enqueue_script("$splng_theme_prefix-main", SPLNG_CHILD_DIST . '/js/main.min.js', array('jquery'), $splng_theme_version, true);
     }
     add_action('wp_enqueue_scripts', 'splng_child_enqueue_styles_scripts', 20);
 
@@ -54,13 +55,13 @@
     if(function_exists('acf_add_options_page')) {
 
         // Get site name and theme slug for titles
-        global $theme_slug;
+        global $splng_theme_slug;
         $site_name = get_bloginfo('name');
 
         acf_add_options_page(array(
-            'page_title'  => sprintf(__('%s Setup', $theme_slug), $site_name),
-            'menu_title'  => sprintf(__('%s Setup', $theme_slug), $site_name),
-            'menu_slug'   => $theme_slug . '-setup',
+            'page_title'  => sprintf(__('%s Setup', $splng_theme_slug), $site_name),
+            'menu_title'  => sprintf(__('%s Setup', $splng_theme_slug), $site_name),
+            'menu_slug'   => $splng_theme_slug . '-setup',
             'capability'  => 'edit_posts',
             'redirect'    => false,
             'position'    => 2,

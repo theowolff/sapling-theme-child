@@ -8,11 +8,21 @@ const gulpIf = require('gulp-if');
 const sass = require('gulp-sass')(require('sass'));
 const rename = require('gulp-rename');
 const concat = require('gulp-concat');
+const header = require('gulp-header');
 const { createGulpEsbuild } = require('gulp-esbuild');
 const esbuild = createGulpEsbuild({ incremental: false });
 
-const paths = { scss:'scss/**/*.scss', js:'src/js/**/*.js', outCss:'dist/css', outJs:'dist/js' };
+const paths = {
+  scss: 'scss/**/*.scss',
+  js: 'src/js/**/*.js',
+  outCss: 'dist/css',
+  outJs: 'dist/js',
+};
 const isProd = process.env.NODE_ENV === 'production';
+
+// Inject this at the top of each SCSS entry so mixins/vars are always available
+// Assumes scss/_shared.scss exists and @forwards variables/mixins/etc.
+const sharedHeader = "@use 'shared' as *;\n";
 
 function clean() {
   const out = path.resolve('dist');
@@ -24,36 +34,64 @@ function clean() {
   });
 }
 
-function stylesMain(){
+function stylesMain() {
   return gulp.src(['scss/main.scss'], { allowEmpty: true })
     .pipe(plumber())
+    .pipe(header(sharedHeader))
     .pipe(gulpIf(!isProd, sourcemaps.init()))
-    .pipe(sass.sync({ outputStyle: 'expanded' }))
-    .pipe(postcss([ require('autoprefixer')(), ...(isProd ? [require('cssnano')()] : []) ]))
+    .pipe(
+      sass.sync({
+        outputStyle: 'expanded',
+        includePaths: ['scss'],
+      }).on('error', sass.logError)
+    )
+    .pipe(postcss([
+      require('autoprefixer')(),
+      ...(isProd ? [require('cssnano')()] : []),
+    ]))
     .pipe(rename({ basename: 'main', suffix: '.min' }))
     .pipe(gulpIf(!isProd, sourcemaps.write('.')))
     .pipe(gulp.dest(paths.outCss));
 }
 
-function stylesSections(){
+function stylesSections() {
   return gulp.src(['scss/sections/**/*.scss'], { allowEmpty: true })
     .pipe(plumber())
+    .pipe(header(sharedHeader))
     .pipe(gulpIf(!isProd, sourcemaps.init()))
-    .pipe(sass.sync({ outputStyle: 'expanded' }))
-    .pipe(postcss([ require('autoprefixer')(), ...(isProd ? [require('cssnano')()] : []) ]))
-    .pipe(concat('sections.css'))
+    .pipe(
+      sass.sync({
+        outputStyle: 'expanded',
+        includePaths: ['scss'],
+      }).on('error', sass.logError)
+    )
+    .pipe(postcss([
+      require('autoprefixer')(),
+      ...(isProd ? [require('cssnano')()] : []),
+    ]))
+    .pipe(concat('sections.css')) // single bundle
     .pipe(rename({ basename: 'sections', suffix: '.min' }))
     .pipe(gulpIf(!isProd, sourcemaps.write('.')))
     .pipe(gulp.dest(paths.outCss));
 }
 
-function stylesPages(){
+function stylesPages() {
   return gulp.src(['scss/pages/*.scss'], { allowEmpty: true })
     .pipe(plumber())
+    .pipe(header(sharedHeader))
     .pipe(gulpIf(!isProd, sourcemaps.init()))
-    .pipe(sass.sync({ outputStyle: 'expanded' }))
-    .pipe(postcss([ require('autoprefixer')(), ...(isProd ? [require('cssnano')()] : []) ]))
+    .pipe(
+      sass.sync({
+        outputStyle: 'expanded',
+        includePaths: ['scss'],
+      }).on('error', sass.logError)
+    )
+    .pipe(postcss([
+      require('autoprefixer')(),
+      ...(isProd ? [require('cssnano')()] : []),
+    ]))
     .pipe(rename(function (p) {
+      // outputs dist/css/pages/{page}.min.css
       p.dirname = 'pages';
       p.basename = p.basename + '.min';
       p.extname = '.css';
@@ -62,23 +100,34 @@ function stylesPages(){
     .pipe(gulp.dest(paths.outCss));
 }
 
-function scripts(){
+function scripts() {
   return gulp.src(['src/js/*.js'], { allowEmpty: true })
     .pipe(plumber())
-    .pipe(esbuild({ bundle:true, format:'iife', target:'es2018', sourcemap:!isProd,
-                    outdir: paths.outJs, entryNames:'[name]', legalComments:'none', minify:isProd }));
+    .pipe(esbuild({
+      bundle: true,
+      format: 'iife',
+      target: 'es2018',
+      sourcemap: !isProd,
+      outdir: paths.outJs,
+      entryNames: '[name]',
+      legalComments: 'none',
+      minify: isProd,
+    }));
 }
 
-function watchAll(){
-  gulp.watch('scss/main.scss', stylesMain);
-  gulp.watch('scss/sections/**/*.scss', stylesSections);
-  gulp.watch('scss/pages/*.scss', stylesPages);
+function watchAll() {
+  gulp.watch(['scss/_shared.scss', 'scss/main.scss'], stylesMain);
+  gulp.watch(['scss/_shared.scss', 'scss/sections/**/*.scss'], stylesSections);
+  gulp.watch(['scss/_shared.scss', 'scss/pages/*.scss'], stylesPages);
   gulp.watch(paths.js, scripts);
 }
 
 const dev = gulp.series(clean, gulp.parallel(stylesMain, stylesSections, stylesPages, scripts));
-const build = gulp.series(() => { process.env.NODE_ENV='production'; return Promise.resolve(); },
-  clean, gulp.parallel(stylesMain, stylesSections, stylesPages, scripts));
+const build = gulp.series(
+  () => { process.env.NODE_ENV = 'production'; return Promise.resolve(); },
+  clean,
+  gulp.parallel(stylesMain, stylesSections, stylesPages, scripts)
+);
 
 exports.clean = clean;
 exports.styles = gulp.parallel(stylesMain, stylesSections, stylesPages);

@@ -4,13 +4,11 @@ const path = require('path');
 const plumber = require('gulp-plumber');
 const sourcemaps = require('gulp-sourcemaps');
 const postcss = require('gulp-postcss');
-const gulpIf = require('gulp-if');
 const sass = require('gulp-sass')(require('sass'));
 const rename = require('gulp-rename');
 const concat = require('gulp-concat');
 const header = require('gulp-header');
-const { createGulpEsbuild } = require('gulp-esbuild');
-const esbuild = createGulpEsbuild({ incremental: false });
+const esbuild = require('esbuild'); // native API
 
 const paths = {
   scss: 'scss/**/*.scss',
@@ -18,7 +16,6 @@ const paths = {
   outCss: 'dist/css',
   outJs: 'dist/js',
 };
-const isProd = process.env.NODE_ENV === 'production';
 
 // Inject this at the top of each SCSS entry so mixins/vars are always available
 // Assumes scss/_shared.scss exists and @forwards variables/mixins/etc.
@@ -34,11 +31,15 @@ function clean() {
   });
 }
 
+/* ======================
+  CSS — always sourcemaps + minify
+  ====================== */
+
 function stylesMain() {
   return gulp.src(['scss/main.scss'], { allowEmpty: true })
     .pipe(plumber())
     .pipe(header(sharedHeader))
-    .pipe(gulpIf(!isProd, sourcemaps.init()))
+    .pipe(sourcemaps.init())
     .pipe(
       sass.sync({
         outputStyle: 'expanded',
@@ -47,10 +48,10 @@ function stylesMain() {
     )
     .pipe(postcss([
       require('autoprefixer')(),
-      ...(isProd ? [require('cssnano')()] : []),
+      require('cssnano')(),
     ]))
     .pipe(rename({ basename: 'main', suffix: '.min' }))
-    .pipe(gulpIf(!isProd, sourcemaps.write('.')))
+    .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest(paths.outCss));
 }
 
@@ -58,7 +59,7 @@ function stylesSections() {
   return gulp.src(['scss/sections/**/*.scss'], { allowEmpty: true })
     .pipe(plumber())
     .pipe(header(sharedHeader))
-    .pipe(gulpIf(!isProd, sourcemaps.init()))
+    .pipe(sourcemaps.init())
     .pipe(
       sass.sync({
         outputStyle: 'expanded',
@@ -67,11 +68,11 @@ function stylesSections() {
     )
     .pipe(postcss([
       require('autoprefixer')(),
-      ...(isProd ? [require('cssnano')()] : []),
+      require('cssnano')(),
     ]))
-    .pipe(concat('sections.css')) // single bundle
+    .pipe(concat('sections.css'))
     .pipe(rename({ basename: 'sections', suffix: '.min' }))
-    .pipe(gulpIf(!isProd, sourcemaps.write('.')))
+    .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest(paths.outCss));
 }
 
@@ -79,7 +80,7 @@ function stylesPages() {
   return gulp.src(['scss/pages/*.scss'], { allowEmpty: true })
     .pipe(plumber())
     .pipe(header(sharedHeader))
-    .pipe(gulpIf(!isProd, sourcemaps.init()))
+    .pipe(sourcemaps.init())
     .pipe(
       sass.sync({
         outputStyle: 'expanded',
@@ -88,32 +89,57 @@ function stylesPages() {
     )
     .pipe(postcss([
       require('autoprefixer')(),
-      ...(isProd ? [require('cssnano')()] : []),
+      require('cssnano')(),
     ]))
-    .pipe(rename(function (p) {
+    .pipe(rename((p) => {
       // outputs dist/css/pages/{page}.min.css
       p.dirname = 'pages';
       p.basename = p.basename + '.min';
       p.extname = '.css';
     }))
-    .pipe(gulpIf(!isProd, sourcemaps.write('.')))
+    .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest(paths.outCss));
 }
 
+/* ======================
+  JS — always sourcemaps + minify
+  ====================== */
+
 function scripts() {
-  return gulp.src(['src/js/*.js'], { allowEmpty: true })
-    .pipe(plumber())
-    .pipe(esbuild({
-      bundle: true,
-      format: 'iife',
-      target: 'es2018',
-      sourcemap: !isProd,
-      outdir: paths.outJs,
-      entryNames: '[name]',
-      legalComments: 'none',
-      minify: isProd,
-    }));
+  const srcDir = 'src/js';
+  if (!fs.existsSync(srcDir)) {
+    fs.mkdirSync(paths.outJs, { recursive: true });
+    return Promise.resolve();
+  }
+
+  const entryPoints = fs.readdirSync(srcDir)
+    .filter(f => f.endsWith('.js'))
+    .map(f => path.join(srcDir, f));
+
+  if (entryPoints.length === 0) {
+    fs.mkdirSync(paths.outJs, { recursive: true });
+    return Promise.resolve();
+  }
+
+  fs.mkdirSync(paths.outJs, { recursive: true });
+
+  return esbuild.build({
+    entryPoints,
+    outdir: paths.outJs,
+    bundle: true,
+    format: 'iife',
+    target: ['es2018'],
+    sourcemap: true,
+    minify: true,
+    entryNames: '[name].min',
+    legalComments: 'none',
+    logLevel: 'silent',
+  });
 }
+
+/* ======================
+  Watch / Tasks
+  ====================== */
 
 function watchAll() {
   gulp.watch(['scss/_shared.scss', 'scss/main.scss'], stylesMain);
@@ -123,11 +149,7 @@ function watchAll() {
 }
 
 const dev = gulp.series(clean, gulp.parallel(stylesMain, stylesSections, stylesPages, scripts));
-const build = gulp.series(
-  () => { process.env.NODE_ENV = 'production'; return Promise.resolve(); },
-  clean,
-  gulp.parallel(stylesMain, stylesSections, stylesPages, scripts)
-);
+const build = gulp.series(clean, gulp.parallel(stylesMain, stylesSections, stylesPages, scripts));
 
 exports.clean = clean;
 exports.styles = gulp.parallel(stylesMain, stylesSections, stylesPages);

@@ -1,0 +1,10 @@
+// Always include parent globals & variables first
+@use '../../twwp-theme/scss/variables';
+@use '../../twwp-theme/scss/globals';
+
+// Then child-level variables/globals overrides (can override with same tokens)
+@use 'variables';
+@use 'globals';
+
+// Optionally child partials/pages/sections
+@use 'partials';

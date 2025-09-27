@@ -1,5 +1,6 @@
-// Child-level variables/globals
+// Child-level variables, mixins, globals
 @use 'variables';
+@use 'mixins' as *;
 @use 'globals';
 
 // Optionally child partials/pages/sections

@@ -1,5 +1,6 @@
 const gulp = require('gulp');
-const del = require('del');
+const fs = require('fs');
+const path = require('path');
 const plumber = require('gulp-plumber');
 const sourcemaps = require('gulp-sourcemaps');
 const postcss = require('gulp-postcss');
@@ -13,7 +14,15 @@ const esbuild = createGulpEsbuild({ incremental: false });
 const paths = { scss:'scss/**/*.scss', js:'src/js/**/*.js', outCss:'dist/css', outJs:'dist/js' };
 const isProd = process.env.NODE_ENV === 'production';
 
-function clean(){ return del(['dist']); }
+function clean() {
+  const out = path.resolve('dist');
+  return new Promise((resolve, reject) => {
+    fs.rm(out, { recursive: true, force: true }, (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+}
 
 function stylesMain(){
   return gulp.src(['scss/main.scss'], { allowEmpty: true })

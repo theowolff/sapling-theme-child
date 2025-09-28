@@ -53,6 +53,36 @@
     add_action('after_setup_theme', 'splng_register_theme_menus', 5);
 
     /**
+     * Save ACF GUI edits to the child theme.
+     * @param string path
+     */
+    function splng_acf_json_save_point($path) {
+        return get_stylesheet_directory() . '/acf-json';
+    }
+    add_filter('acf/settings/save_json', 'splng_acf_json_save_point');
+
+    /**
+     * ACF Load order: child first (overrides), then parent (defaults).
+     * @param array paths
+     */
+    function sapling_acf_json_load_points($paths) {
+
+        /**
+         * Reset and define explicit order.
+         */
+        $paths = array();
+
+        // Child
+        $paths[] = get_stylesheet_directory() . '/acf-json'; 
+
+        // Parent
+        $paths[] = get_template_directory() . '/acf-json'; 
+
+        return $paths;
+    }
+    add_filter('acf/settings/load_json', 'sapling_acf_json_load_points');
+
+    /**
      * Add the Theme Setup options page (requires ACF Pro).
      * @return void
      */

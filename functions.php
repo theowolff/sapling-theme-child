@@ -13,6 +13,10 @@
         define('SPLNG_CHILD_DIST', get_stylesheet_directory_uri() . '/dist');
     }
 
+    if(! defined('SPLNG_CHILD_DIST_PATH')) {
+        define('SPLNG_CHILD_DIST_PATH', get_stylesheet_directory() . '/dist');
+    }
+
     /**
      * Get the theme object and properties.
      */

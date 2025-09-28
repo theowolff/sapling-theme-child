@@ -6,7 +6,6 @@ const sourcemaps = require('gulp-sourcemaps');
 const postcss = require('gulp-postcss');
 const sass = require('gulp-sass')(require('sass'));
 const rename = require('gulp-rename');
-const concat = require('gulp-concat');
 const esbuild = require('esbuild');
 
 const paths = {
@@ -25,7 +24,8 @@ const paths = {
   outVendorJs: 'dist/vendor/js',
 };
 
-// will let SCSS @use/@import resolve from both theme and vendor packages (if ever needed)
+// Will let SCSS @use/@import resolve from both 
+// theme and vendor packages (if ever needed)
 const sassIncludePaths = ['src/scss', 'node_modules'];
 
 function clean() {
@@ -61,8 +61,12 @@ function stylesMain() {
     .pipe(gulp.dest(paths.outCss));
 }
 
+// gulpfile.js (replace stylesSections)
 function stylesSections() {
-  return gulp.src(['src/scss/sections/**/*.scss'], { allowEmpty: true })
+  return gulp.src([
+      'src/scss/sections/**/*.scss',
+      '!src/scss/sections/**/_*.scss',
+    ], { allowEmpty: true })
     .pipe(plumber())
     .pipe(sourcemaps.init())
     .pipe(
@@ -75,8 +79,11 @@ function stylesSections() {
       require('autoprefixer')(),
       require('cssnano')(),
     ]))
-    .pipe(concat('sections.css'))
-    .pipe(rename({ basename: 'sections', suffix: '.min' }))
+    .pipe(rename((p) => {
+      p.dirname = 'sections';
+      p.basename = p.basename + '.min';
+      p.extname = '.css';
+    }))
     .pipe(sourcemaps.write('.'))
     .pipe(gulp.dest(paths.outCss));
 }
@@ -96,7 +103,6 @@ function stylesPages() {
       require('cssnano')(),
     ]))
     .pipe(rename((p) => {
-      // Outputs dist/css/pages/{page}.min.css
       p.dirname = 'pages';
       p.basename = p.basename + '.min';
       p.extname = '.css';
@@ -106,9 +112,10 @@ function stylesPages() {
 }
 
 /* ======================
-   JS — always sourcemaps + minify (theme)
+   JS — base + per-section + per-page (esbuild)
    ====================== */
 
+// Base theme JS: src/js/*.js -> dist/js/{name}.min.js
 function scripts() {
   const srcDir = 'src/js';
   if (!fs.existsSync(srcDir)) {
@@ -117,7 +124,7 @@ function scripts() {
   }
 
   const entryPoints = fs.readdirSync(srcDir)
-    .filter(f => f.endsWith('.js'))
+    .filter(f => f.endsWith('.js') && !f.startsWith('_'))
     .map(f => path.join(srcDir, f));
 
   if (entryPoints.length === 0) {
@@ -139,6 +146,78 @@ function scripts() {
     legalComments: 'none',
     logLevel: 'silent',
     // don’t bundle jQuery; WP supplies it
+    external: ['jquery'],
+  });
+}
+
+// Sections JS: src/js/sections/*.js -> dist/js/sections/{name}.min.js
+function scriptsSections() {
+  const srcDir = 'src/js/sections';
+  const outDir = path.join(paths.outJs, 'sections');
+
+  if (!fs.existsSync(srcDir)) {
+    fs.mkdirSync(outDir, { recursive: true });
+    return Promise.resolve();
+  }
+
+  const entryPoints = fs.readdirSync(srcDir)
+    .filter(f => f.endsWith('.js') && !f.startsWith('_'))
+    .map(f => path.join(srcDir, f));
+
+  if (entryPoints.length === 0) {
+    fs.mkdirSync(outDir, { recursive: true });
+    return Promise.resolve();
+  }
+
+  fs.mkdirSync(outDir, { recursive: true });
+
+  return esbuild.build({
+    entryPoints,
+    outdir: outDir,
+    bundle: true,
+    format: 'iife',
+    target: ['es2018'],
+    sourcemap: true,
+    minify: true,
+    entryNames: '[name].min',
+    legalComments: 'none',
+    logLevel: 'silent',
+    external: ['jquery'],
+  });
+}
+
+// Pages JS: src/js/pages/*.js -> dist/js/pages/{name}.min.js
+function scriptsPages() {
+  const srcDir = 'src/js/pages';
+  const outDir = path.join(paths.outJs, 'pages');
+
+  if (!fs.existsSync(srcDir)) {
+    fs.mkdirSync(outDir, { recursive: true });
+    return Promise.resolve();
+  }
+
+  const entryPoints = fs.readdirSync(srcDir)
+    .filter(f => f.endsWith('.js') && !f.startsWith('_'))
+    .map(f => path.join(srcDir, f));
+
+  if (entryPoints.length === 0) {
+    fs.mkdirSync(outDir, { recursive: true });
+    return Promise.resolve();
+  }
+
+  fs.mkdirSync(outDir, { recursive: true });
+
+  return esbuild.build({
+    entryPoints,
+    outdir: outDir,
+    bundle: true,
+    format: 'iife',
+    target: ['es2018'],
+    sourcemap: true,
+    minify: true,
+    entryNames: '[name].min',
+    legalComments: 'none',
+    logLevel: 'silent',
     external: ['jquery'],
   });
 }
@@ -184,7 +263,9 @@ function watchAll() {
   gulp.watch('src/scss/pages/**/*.scss', stylesPages);
 
   // JS
-  gulp.watch(paths.js, scripts);
+  gulp.watch('src/js/*.js', scripts);
+  gulp.watch('src/js/sections/**/*.js', scriptsSections);
+  gulp.watch('src/js/pages/**/*.js', scriptsPages);
 
   // Vendor assets
   gulp.watch(paths.vendorCss, vendorCss);
@@ -193,17 +274,25 @@ function watchAll() {
 
 const dev = gulp.series(
   clean,
-  gulp.parallel(stylesMain, stylesSections, stylesPages, scripts, vendorCss, vendorJs)
+  gulp.parallel(
+    stylesMain, stylesSections, stylesPages,
+    scripts, scriptsSections, scriptsPages,
+    vendorCss, vendorJs
+  )
 );
 
 const build = gulp.series(
   clean,
-  gulp.parallel(stylesMain, stylesSections, stylesPages, scripts, vendorCss, vendorJs)
+  gulp.parallel(
+    stylesMain, stylesSections, stylesPages,
+    scripts, scriptsSections, scriptsPages,
+    vendorCss, vendorJs
+  )
 );
 
 exports.clean = clean;
 exports.styles = gulp.parallel(stylesMain, stylesSections, stylesPages);
-exports.scripts = scripts;
+exports.scripts = gulp.parallel(scripts, scriptsSections, scriptsPages);
 exports.vendors = gulp.parallel(vendorCss, vendorJs);
 exports.dev = dev;
 exports.build = build;

@@ -7,18 +7,139 @@
      */
 
     /**
+     * Get the ACF flexible content field rows for this page.
+     * Extract the layout names and store them in a global array.
+     * 
+     * This allows us to enqueue per-section CSS/JS in functions.php
+     * without having to call have_rows() and the_row() here.
+     */
+    function splng_store_acf_page_components () {
+
+        /**
+         * Only run on singular pages.
+         */
+        if (!is_page()) {
+            return;
+        }
+
+        global $splng_theme_prefix, $splng_page_components;
+        $field  = "{$splng_theme_prefix}__global_components";
+
+        /**
+         * Get all rows without advancing the_row() / have_rows().
+         */
+        $rows = function_exists('get_field') ? get_field($field, get_queried_object_id()) : null;
+
+        /**
+         * Store empty to prevent later work.
+         */
+        if(! $rows || ! is_array($rows)) {
+            $splng_page_components = array();
+            return;
+        }
+
+        /**
+         * Extract slugs from layout names like "splng__global_component--hero"
+         */
+        $used = array();
+
+        foreach($rows as $row) {
+
+            /**
+             * Skip invalid rows.
+             */
+            if (empty($row['acf_fc_layout'])) {
+                continue;
+            }
+
+            /**
+             * Extract the slug from the layout name.
+             */
+            $layout = $row['acf_fc_layout'];
+            $needle = "{$splng_theme_prefix}__global_component--";
+
+            /**
+             * If the layout starts with the expected prefix, extract the slug.
+             */
+            if (strpos($layout, $needle) === 0) {
+                $slug = substr($layout, strlen($needle));
+
+                if ($slug) {
+                    $used[$slug] = true;
+                }
+            }
+        }
+
+        /**
+         * Store the used slugs in a global variable for later use.
+         */
+        $splng_page_components = array_keys($used);
+    }
+    add_action('wp', 'splng_store_acf_page_components');
+
+    /**
      * Enqueue child theme styles and scripts.
      * @return void
      */
     function splng_child_enqueue_styles_scripts() {
-        global $splng_theme_prefix, $splng_theme_version;
+        global $splng_theme_prefix, $splng_theme_version, $splng_page_components;
 
         /** Styles */
         wp_enqueue_style("$splng_theme_prefix-main", SPLNG_CHILD_DIST . '/css/main.min.css', array(), $splng_theme_version);
         
+        // Section-specific styles
+        if($splng_page_components) {
+
+            foreach($splng_page_components as $slug) {
+                
+                /**
+                 * Path to the section CSS file.
+                 */
+                $section_css = SPLNG_CHILD_DIST . "/css/sections/{$slug}.min.css";
+                $section_css_path = SPLNG_CHILD_DIST_PATH . "/css/sections/{$slug}.min.css";
+
+                /**
+                 * Silently skip if not built yet.
+                 */
+                if(! file_exists($section_css_path)) {
+                    continue;
+                }
+
+                /**
+                 * Enqueue the style.
+                 */
+                wp_enqueue_style("$splng_theme_prefix-section-$slug", $section_css, array(), $splng_theme_version);
+            }
+        }
+
         /** Scripts */
         wp_enqueue_script('jquery');
         wp_enqueue_script("$splng_theme_prefix-main", SPLNG_CHILD_DIST . '/js/main.min.js', array('jquery'), $splng_theme_version, true);
+
+        // Section-specific scripts
+        if($splng_page_components) {
+
+            foreach($splng_page_components as $slug) {
+                
+                /**
+                 * Path to the section JS file.
+                 */
+                $section_js = SPLNG_CHILD_DIST . "/js/sections/{$slug}.min.js";
+                $section_js_path = SPLNG_CHILD_DIST_PATH . "/js/sections/{$slug}.min.js";
+
+                /**
+                 * Silently skip if not built yet.
+                 */
+                if(! file_exists($section_js_path)) {
+                    continue;
+                }
+
+                /**
+                 * Enqueue the script.
+                 */
+                wp_enqueue_script("$splng_theme_prefix-section-$slug", $section_js, array(), $splng_theme_version, true);
+            }
+        }
     }
     add_action('wp_enqueue_scripts', 'splng_child_enqueue_styles_scripts', 20);
 

@@ -265,7 +265,7 @@ function watchAll() {
   // JS
   gulp.watch('src/js/*.js', scripts);
   gulp.watch('src/js/sections/**/*.js', scriptsSections);
-  gulp.watch('src/js/pages/**/*.js', scriptsPages);
+  gulp.watch('src/js/pages/*.js', scriptsPages);
 
   // Vendor assets
   gulp.watch(paths.vendorCss, vendorCss);

@@ -4,9 +4,14 @@
 @use 'variables' as v;
 
 @mixin optional-at-root($sel) {
-  // If we're inside a selector (&), append $sel to it; otherwise use $sel at root
-  @at-root #{if(&, selector.append(&, $sel), $sel)} {
-    @content;
+  @if & {
+    @at-root #{selector.append(&, $sel)} {
+      @content;
+    }
+  } @else {
+    @at-root #{$sel} {
+      @content;
+    }
   }
 }
 

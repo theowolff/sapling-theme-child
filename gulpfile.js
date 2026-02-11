@@ -7,11 +7,13 @@ const postcss = require('gulp-postcss');
 const sass = require('gulp-sass')(require('sass'));
 const rename = require('gulp-rename');
 const esbuild = require('esbuild');
+const imagemin = require('gulp-imagemin');
 
 const paths = {
   // Theme sources
   scss: 'src/scss/**/*.scss',
   js: 'src/js/**/*.js',
+  img: 'src/img/**/*.{png,jpg,jpeg,gif,svg,webp}',
 
   // Vendor sources (manual files you add to the theme repo)
   vendorCss: 'src/vendor/css/**/*.{css,map}',
@@ -20,6 +22,7 @@ const paths = {
   // Outputs
   outCss: 'dist/css',
   outJs: 'dist/js',
+  outImg: 'dist/img',
   outVendorCss: 'dist/vendor/css',
   outVendorJs: 'dist/vendor/js',
 };
@@ -242,6 +245,17 @@ function vendorJs() {
 }
 
 /* ======================
+   Images — optimize and copy src/img → dist/img
+   ====================== */
+
+function images() {
+  return gulp.src(paths.img, { allowEmpty: true, encoding: false })
+    .pipe(plumber())
+    .pipe(imagemin())
+    .pipe(gulp.dest(paths.outImg));
+}
+
+/* ======================
    Watch / Tasks
    ====================== */
 
@@ -270,6 +284,9 @@ function watchAll() {
   // Vendor assets
   gulp.watch(paths.vendorCss, vendorCss);
   gulp.watch(paths.vendorJs, vendorJs);
+
+  // Images
+  gulp.watch(paths.img, images);
 }
 
 const dev = gulp.series(
@@ -277,7 +294,8 @@ const dev = gulp.series(
   gulp.parallel(
     stylesMain, stylesSections, stylesPages,
     scripts, scriptsSections, scriptsPages,
-    vendorCss, vendorJs
+    vendorCss, vendorJs,
+    images
   )
 );
 
@@ -286,7 +304,8 @@ const build = gulp.series(
   gulp.parallel(
     stylesMain, stylesSections, stylesPages,
     scripts, scriptsSections, scriptsPages,
-    vendorCss, vendorJs
+    vendorCss, vendorJs,
+    images
   )
 );
 
@@ -294,6 +313,7 @@ exports.clean = clean;
 exports.styles = gulp.parallel(stylesMain, stylesSections, stylesPages);
 exports.scripts = gulp.parallel(scripts, scriptsSections, scriptsPages);
 exports.vendors = gulp.parallel(vendorCss, vendorJs);
+exports.images = images;
 exports.dev = dev;
 exports.build = build;
 exports.watch = gulp.series(dev, watchAll);
